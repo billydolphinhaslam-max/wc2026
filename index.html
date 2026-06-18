@@ -13,16 +13,30 @@
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+    .flag { display:inline-block; vertical-align:middle; border-radius:2px; flex-shrink:0; }
   </style>
   <script>
-    window.WC_FLAGS = {"Mexico": "🇲🇽", "South Korea": "🇰🇷", "South Africa": "🇿🇦", "Czechia": "🇨🇿", "Switzerland": "🇨🇭", "Canada": "🇨🇦", "Bosnia": "🇧🇦", "Qatar": "🇶🇦", "Brazil": "🇧🇷", "Morocco": "🇲🇦", "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "Haiti": "🇭🇹", "USA": "🇺🇸", "Paraguay": "🇵🇾", "Australia": "🇦🇺", "Turkey": "🇹🇷", "Germany": "🇩🇪", "Ecuador": "🇪🇨", "Ivory Coast": "🇨🇮", "Curacao": "🇨🇼", "Netherlands": "🇳🇱", "Japan": "🇯🇵", "Sweden": "🇸🇪", "Tunisia": "🇹🇳", "Belgium": "🇧🇪", "Egypt": "🇪🇬", "Iran": "🇮🇷", "New Zealand": "🇳🇿", "Spain": "🇪🇸", "Uruguay": "🇺🇾", "Saudi Arabia": "🇸🇦", "Cape Verde": "🇨🇻", "France": "🇫🇷", "Norway": "🇳🇴", "Senegal": "🇸🇳", "Iraq": "🇮🇶", "Argentina": "🇦🇷", "Austria": "🇦🇹", "Algeria": "🇩🇿", "Jordan": "🇯🇴", "Portugal": "🇵🇹", "Colombia": "🇨🇴", "DR Congo": "🇨🇩", "Uzbekistan": "🇺🇿", "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Croatia": "🇭🇷", "Ghana": "🇬🇭", "Panama": "🇵🇦"};
+    window.FLAG_URLS = {"Mexico": "mx", "South Korea": "kr", "South Africa": "za", "Czechia": "cz", "Switzerland": "ch", "Canada": "ca", "Bosnia": "ba", "Qatar": "qa", "Brazil": "br", "Morocco": "ma", "Scotland": "gb-sct", "Haiti": "ht", "USA": "us", "Paraguay": "py", "Australia": "au", "Turkey": "tr", "Germany": "de", "Ecuador": "ec", "Ivory Coast": "ci", "Curacao": "cw", "Netherlands": "nl", "Japan": "jp", "Sweden": "se", "Tunisia": "tn", "Belgium": "be", "Egypt": "eg", "Iran": "ir", "New Zealand": "nz", "Spain": "es", "Uruguay": "uy", "Saudi Arabia": "sa", "Cape Verde": "cv", "France": "fr", "Norway": "no", "Senegal": "sn", "Iraq": "iq", "Argentina": "ar", "Austria": "at", "Algeria": "dz", "Jordan": "jo", "Portugal": "pt", "Colombia": "co", "DR Congo": "cd", "Uzbekistan": "uz", "England": "gb-eng", "Croatia": "hr", "Ghana": "gh", "Panama": "pa"};
   </script>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
     const { useState, useEffect, useCallback } = React;
-    const FLAGS = window.WC_FLAGS;
+
+    function getFlag(team) {
+      const cc = window.FLAG_URLS[team];
+      if (!cc) return React.createElement('span', {style:{width:20,display:'inline-block'}}, '');
+      return React.createElement('img', {
+        src: `https://flagcdn.com/20x15/${cc}.png`,
+        alt: team,
+        className: 'flag',
+        width: 20,
+        height: 15,
+        style: {marginRight:1},
+        onError: (e) => { e.target.style.display='none'; }
+      });
+    }
 
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
@@ -295,13 +309,13 @@ function Tab1({selected,setSelected,filter,setFilter}){
               style={{...S.tableRow,minWidth:680,background:isSel?"rgba(255,255,255,0.07)":"transparent",borderLeft:`3px solid ${isSel?gc:"transparent"}`}}>
               <span style={S.rank}>{rank}</span>
               <span style={S.teamCell}>
-                <span style={{fontSize:17}}>{FLAGS[row.team]||"🏳"}</span>
+                <span style={{fontSize:17}}>{getFlag(row.team)}</span>
                 <span style={{fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>{row.team}</span>
                 <span style={{...S.badge,background:gc+"33",color:gc}}>{row.group}</span>
               </span>
               {row.games.map((g,i)=>(
                 <span key={i} style={S.gameCol}>
-                  <span style={{fontSize:9,color:"#555",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{FLAGS[g.opponent]||""} {g.opponent}</span>
+                  <span style={{fontSize:9,color:"#555",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{getFlag(g.opponent)} {g.opponent}</span>
                   <span style={{fontSize:11,fontWeight:600,color:probColor(g.winProb)}}>{pct(g.winProb)}</span>
                 </span>
               ))}
@@ -314,14 +328,14 @@ function Tab1({selected,setSelected,filter,setFilter}){
       {sel&&(
         <div style={S.detail}>
           <h2 style={{margin:"0 0 14px",fontSize:18,fontWeight:600,display:"flex",alignItems:"center"}}>
-            {FLAGS[sel.team]} {sel.team}
+            {getFlag(sel.team)} {sel.team}
             <span style={{...S.badge,background:GC[sel.group]+"33",color:GC[sel.group],marginLeft:8,fontSize:13}}>Group {sel.group}</span>
           </h2>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10}}>
             {sel.games.map((g,i)=>(
               <div key={i} style={S.detailCard}>
                 <div style={S.detailLabel}>Game {i+1}</div>
-                <div style={{fontSize:11,color:"#ccc",marginBottom:4}}>{FLAGS[g.opponent]} vs {g.opponent}</div>
+                <div style={{fontSize:11,color:"#ccc",marginBottom:4}}>{getFlag(g.opponent)} vs {g.opponent}</div>
                 <div style={{fontSize:20,fontWeight:700,color:probColor(g.winProb)}}>{pct(g.winProb)}</div>
               </div>
             ))}
@@ -374,7 +388,7 @@ function Tab2({results,loading,error,refetch,groupFilter,setGroupFilter}){
                 {standings.map((s,i)=>(
                   <div key={s.team} style={{display:"flex",alignItems:"center",gap:3,padding:"5px 0",borderBottom:i<3?"1px solid rgba(255,255,255,0.05)":"none"}}>
                     <span style={{width:16,fontSize:10,color:"#444",fontWeight:700}}>{i+1}</span>
-                    <span style={{fontSize:14,width:18}}>{FLAGS[s.team]||"🏳"}</span>
+                    <span style={{fontSize:14,width:18}}>{getFlag(s.team)}</span>
                     <span style={{flex:1,fontSize:10,fontWeight:600}}>{s.team}</span>
                     <span style={{width:20,textAlign:"center",fontSize:10,color:"#555"}}>{s.gp}</span>
                     <span style={{width:26,textAlign:"center",fontSize:10,color:s.gd>0?"#4ade80":s.gd<0?"#f87171":"#666"}}>{s.gd>0?"+":""}{s.gd}</span>
@@ -391,13 +405,13 @@ function Tab2({results,loading,error,refetch,groupFilter,setGroupFilter}){
                   return(
                     <div key={i} style={{display:"flex",alignItems:"center",gap:3,padding:"4px 0",borderBottom:i<grpGames.length-1?"1px solid rgba(255,255,255,0.05)":"none",fontSize:9,opacity:g.played?1:0.35}}>
                       <span style={{flex:1,textAlign:"right",fontWeight:hw?700:400,color:hw?"#4ade80":dr?"#facc15":"#666",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                        {FLAGS[g.home]} {g.home}
+                        {getFlag(g.home)} {g.home}
                       </span>
                       <span style={{width:40,textAlign:"center",flexShrink:0,fontWeight:700,color:"#ccc",fontSize:10}}>
                         {g.played?`${g.homeGoals}–${g.awayGoals}`:"vs"}
                       </span>
                       <span style={{flex:1,fontWeight:aw?700:400,color:aw?"#4ade80":dr?"#facc15":"#666",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                        {FLAGS[g.away]} {g.away}
+                        {getFlag(g.away)} {g.away}
                       </span>
                     </div>
                   );
@@ -459,7 +473,7 @@ function Tab3({results,loading,error,refetch}){
                 const tgp=results.filter(g=>g.played&&(g.home===t||g.away===t)).length;
                 return(
                   <div key={t} style={{...S.teamChip,borderColor:GC[grp]+"66"}}>
-                    <span style={{fontSize:13}}>{FLAGS[t]||"🏳"}</span>
+                    <span style={{fontSize:13}}>{getFlag(t)}</span>
                     <div style={{display:"flex",flexDirection:"column",gap:0}}>
                       <span style={{fontSize:9,fontWeight:600,lineHeight:1.2}}>{t}</span>
                       <span style={{fontSize:8,color:"#555",lineHeight:1.2}}>{tgp}GP · m:{tMod}</span>
@@ -530,7 +544,7 @@ function Tab4({results,loading,error,refetch}){
                 const tgp=results.filter(g=>g.played&&(g.home===t||g.away===t)).length;
                 return(
                   <div key={t} style={{...S.teamChip,borderColor:GC[grp]+"66"}}>
-                    <span style={{fontSize:13}}>{FLAGS[t]||"🏳"}</span>
+                    <span style={{fontSize:13}}>{getFlag(t)}</span>
                     <div style={{display:"flex",flexDirection:"column",gap:0}}>
                       <span style={{fontSize:9,fontWeight:600,lineHeight:1.2}}>{t}</span>
                       <span style={{fontSize:8,color:"#555",lineHeight:1.2}}>{tgp}GP</span>
