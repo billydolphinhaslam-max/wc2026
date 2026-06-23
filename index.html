@@ -754,69 +754,87 @@ function Tab5() {
   const [liveData, setLiveData] = useState(null);
   const [liveLoading, setLiveLoading] = useState(true);
   const [liveError, setLiveError] = useState(null);
+  const [lastFetched, setLastFetched] = useState(null);
   const [expanded, setExpanded] = useState(null);
 
-  // Fetch live points from Google Sheets via Apps Script
-  useEffect(() => {
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywVGv8xUG4Tska--5wv2iGEZu3a26Nf5QBdBH-PRiTCsWA6A0yZpWgChyr5_B_bY12Sw/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmxEGvOsYJdY_JgkS7TC93W4q4uITlz9mJWxUkf7Wms3P1AbBfaaQBp1LgrSbgMM2KLg/exec";
+
+  const fetchLive = () => {
+    setLiveLoading(true);
+    setLiveError(null);
     fetch(APPS_SCRIPT_URL)
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(data => {
         setLiveData(data.players);
+        setLastFetched(new Date(data.updated || Date.now()));
         setLiveLoading(false);
       })
       .catch(err => {
         setLiveError(err.message);
         setLiveLoading(false);
       });
-  }, []);
+  };
 
-  // Build display rows — live data overrides hardcoded points if available
-  const playerRows = Object.entries(FANTASY_PLAYERS).map(([name, p]) => {
-    const hardcodedPts = p.games.reduce((s, g) => s + calcGamePoints(p.position, g), 0);
-    const live = liveData ? liveData.find(d => d.name === name) : null;
-    const totalPts = live ? live.points : hardcodedPts;
-    return { name, ...p, totalPts, isLive: !!live };
-  }).sort((a, b) => b.totalPts - a.totalPts);
+  useEffect(() => { fetchLive(); }, []);
+
+  const posColor = { midfielder:"#3b82f6", forward:"#f97316", defender:"#22c55e", goalkeeper:"#a855f7" };
+
+  // Use live data if available, otherwise fall back to hardcoded
+  const playerRows = liveData
+    ? liveData.map(p => ({ ...p, totalPts: p.points, isLive: true }))
+    : Object.entries(FANTASY_PLAYERS).map(([name, p]) => ({
+        name, ...p,
+        totalPts: p.games.filter(g => !g.pending).reduce((s,g) => s + calcGamePoints(p.position,g), 0),
+        games: p.games.filter(g => !g.pending),
+        isLive: false
+      })).sort((a,b) => b.totalPts - a.totalPts);
 
   const maxPts = Math.max(...playerRows.map(r => r.totalPts), 1);
-  const posColor = { midfielder: "#3b82f6", forward: "#f97316", defender: "#22c55e", goalkeeper: "#a855f7" };
 
   return (
     <div>
       {/* Status bar */}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
-        {liveLoading && (
-          <span style={{fontSize:10,color:"#facc15"}}>● Fetching live scores from Google Sheets...</span>
-        )}
+        {liveLoading && <span style={{fontSize:10,color:"#facc15"}}>● Fetching from Google Sheets...</span>}
         {!liveLoading && !liveError && liveData && (
-          <span style={{fontSize:10,color:"#4ade80",fontWeight:600}}>● LIVE — points from Google Sheets</span>
+          <>
+            <span style={{fontSize:10,color:"#4ade80",fontWeight:600}}>● LIVE — Google Sheets</span>
+            {lastFetched && <span style={{fontSize:10,color:"#555"}}>{lastFetched.toLocaleTimeString()}</span>}
+          </>
         )}
         {!liveLoading && liveError && (
-          <span style={{fontSize:10,color:"#f87171"}}>● Offline — showing hardcoded points ({liveError})</span>
+          <span style={{fontSize:10,color:"#f87171"}}>● Offline — hardcoded fallback ({liveError})</span>
         )}
-        {!liveLoading && liveData && (
-          <span style={{fontSize:10,color:"#555"}}>Updated from spreadsheet</span>
-        )}
+        <div style={{flex:1}}/>
+        <button onClick={fetchLive} disabled={liveLoading}
+          style={{...S.filterBtn,background:"rgba(255,255,255,0.06)",color:"#888",
+            border:"1px solid rgba(255,255,255,0.1)",fontSize:10,padding:"3px 10px"}}>
+          {liveLoading ? "..." : "↻ Refresh"}
+        </button>
       </div>
 
       {playerRows.map((p, i) => {
         const isExp = expanded === p.name;
         const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
         const pc = posColor[p.position] || "#888";
+        const games = p.games || [];
+
         return (
           <div key={p.name} onClick={() => setExpanded(isExp ? null : p.name)}
             style={{...S.playerRow, cursor:"pointer",
               borderLeft:`3px solid ${i===0?"#ffd700":i===1?"#c0c0c0":i===2?"#cd7f32":"rgba(255,255,255,0.08)"}`}}>
+
+            {/* Header row */}
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:isExp?10:0}}>
-              <span style={{fontSize:18,width:26,textAlign:"center"}}>{medal||<span style={{fontSize:13,color:"#444",fontWeight:700}}>{i+1}</span>}</span>
+              <span style={{fontSize:18,width:26,textAlign:"center"}}>
+                {medal || <span style={{fontSize:13,color:"#444",fontWeight:700}}>{i+1}</span>}
+              </span>
               <div style={{flex:1}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                   <span style={{fontSize:15,fontWeight:700}}>{p.name}</span>
-                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:pc+"22",color:pc,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.05em"}}>{p.position}</span>
+                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:3,
+                    background:pc+"22",color:pc,fontWeight:700,
+                    textTransform:"uppercase",letterSpacing:"0.05em"}}>{p.position}</span>
                   {p.isLive && <span style={{fontSize:9,color:"#4ade80"}}>● live</span>}
                 </div>
                 <div style={{fontSize:10,color:"#555",marginTop:1}}>{p.owner}</div>
@@ -827,20 +845,35 @@ function Tab5() {
               </div>
             </div>
 
+            {/* Mini bar */}
             {!isExp && (
               <div style={{...S.barBg,height:4,marginTop:6}}>
-                <div style={{...S.barFill,width:`${(p.totalPts/maxPts)*100}%`,
+                <div style={{...S.barFill,
+                  width:`${(p.totalPts/maxPts)*100}%`,
                   background:i===0?"#ffd700":i<3?"#888":pc,opacity:0.8}}/>
               </div>
             )}
 
-            {isExp && p.games.filter(g => !g.pending).map((g, gi) => {
-              const breakdown = getBreakdown(p.position, g);
-              const gamePts = calcGamePoints(p.position, g);
+            {/* Expanded game breakdown — from sheet if live, hardcoded otherwise */}
+            {isExp && games.length === 0 && (
+              <div style={{fontSize:11,color:"#555",padding:"8px 0"}}>No games played yet.</div>
+            )}
+            {isExp && games.map((g, gi) => {
+              // Live data from sheet has pre-calculated points per game
+              // Hardcoded fallback uses calcGamePoints
+              const gamePts = p.isLive ? (g.points || 0) : calcGamePoints(p.position, g);
+              const breakdown = p.isLive
+                ? buildLiveBreakdown(p.position, g)
+                : getBreakdown(p.position, g);
+
               return (
-                <div key={gi} style={{background:"rgba(255,255,255,0.04)",borderRadius:6,padding:"10px 12px",marginBottom:4}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                    <span style={{fontSize:11,fontWeight:600,color:"#ccc"}}>{g.match} <span style={{fontSize:9,color:"#555"}}>{g.date}</span></span>
+                <div key={gi} style={{background:"rgba(255,255,255,0.04)",borderRadius:6,
+                  padding:"10px 12px",marginBottom:4}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,flexWrap:"wrap",gap:4}}>
+                    <div>
+                      <span style={{fontSize:11,fontWeight:600,color:"#ccc"}}>{g.match}</span>
+                      {g.date && <span style={{fontSize:9,color:"#555",marginLeft:6}}>{g.date}</span>}
+                    </div>
                     <span style={{fontSize:13,fontWeight:800,color:probColor(gamePts/20)}}>{gamePts} pts</span>
                   </div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
@@ -850,35 +883,62 @@ function Tab5() {
                         borderRadius:4,padding:"3px 8px",
                         border:`1px solid ${b.pts>0?"rgba(74,222,128,0.2)":b.pts<0?"rgba(248,113,113,0.2)":"rgba(255,255,255,0.06)"}`}}>
                         <span style={{fontSize:10,color:"#aaa"}}>{b.label}</span>
-                        <span style={{fontSize:11,fontWeight:700,color:b.pts>0?"#4ade80":b.pts<0?"#f87171":"#555"}}>
+                        <span style={{fontSize:11,fontWeight:700,
+                          color:b.pts>0?"#4ade80":b.pts<0?"#f87171":"#555"}}>
                           {b.pts>0?"+":""}{b.pts}
                         </span>
                       </div>
                     ))}
                   </div>
                   {g.note && <div style={{fontSize:9,color:"#f97316",marginTop:6}}>⚠ {g.note}</div>}
-                  <div style={{fontSize:9,color:"#444",marginTop:6}}>{g.mins} min played</div>
+                  <div style={{fontSize:9,color:"#444",marginTop:4}}>{g.mins} min played</div>
                 </div>
               );
             })}
-            {isExp && !p.isLive && (
-              <div style={{fontSize:9,color:"#555",marginTop:6,fontStyle:"italic"}}>
-                ⚠ Showing hardcoded stats — live data unavailable
-              </div>
-            )}
-            {isExp && p.isLive && (
-              <div style={{fontSize:9,color:"#4ade80",marginTop:6}}>
-                ● Total pulled live from Google Sheets · Tap breakdown shows per-game detail from hardcoded stats
+
+            {isExp && (
+              <div style={{fontSize:9,color:p.isLive?"#4ade80":"#f97316",marginTop:6}}>
+                {p.isLive
+                  ? "● Stats and points from Google Sheets"
+                  : "⚠ Showing hardcoded fallback — sheet unavailable"}
               </div>
             )}
           </div>
         );
       })}
+
       <div style={{fontSize:10,color:"#333",marginTop:12,lineHeight:1.6}}>
-        Live totals from Google Sheets · Per-game breakdown from hardcoded stats · Update spreadsheet after each game
+        All stats from Google Sheets · Update spreadsheet after each game · Points auto-calculate
       </div>
     </div>
   );
+}
+
+// Build a breakdown array from live sheet data (stats already calculated by sheet)
+function buildLiveBreakdown(pos, g) {
+  const lines = [];
+  const played60 = (g.mins || 0) >= 60;
+
+  if (played60) lines.push({label:"Played 60+ min", pts:1});
+  else if (g.mins > 0) lines.push({label:`${g.mins} min (no 60+ bonus)`, pts:0});
+
+  if (pos === "goalkeeper") {
+    if (g.goals > 0) lines.push({label:`${g.goals} goal${g.goals>1?"s":""}`, pts:g.goals*10});
+    if ((g.penSaves||0) > 0) lines.push({label:`${g.penSaves} pen save${g.penSaves>1?"s":""}`, pts:g.penSaves*5});
+    if (g.cs === 1 && played60) lines.push({label:"Clean sheet", pts:4});
+    if ((g.conceded||0) > 1) lines.push({label:`Goals after 1st (×${g.conceded-1})`, pts:-(g.conceded-1)});
+  } else if (pos === "midfielder") {
+    if (g.goals > 0) lines.push({label:`${g.goals} goal${g.goals>1?"s":""}`, pts:g.goals*5});
+    if ((g.assists||0) > 0) lines.push({label:`${g.assists} assist${g.assists>1?"s":""}`, pts:g.assists*3});
+    if (g.cs === 1 && played60) lines.push({label:"Clean sheet", pts:1});
+  } else {
+    if (g.goals > 0) lines.push({label:`${g.goals} goal${g.goals>1?"s":""}`, pts:g.goals*4});
+    if ((g.assists||0) > 0) lines.push({label:`${g.assists} assist${g.assists>1?"s":""}`, pts:g.assists*3});
+    if ((g.sot||0) > 0) lines.push({label:`${g.sot} SOT (÷2)`, pts:Math.floor(g.sot/2)});
+  }
+
+  if (lines.length === 0) lines.push({label:"No stats", pts:0});
+  return lines;
 }
 
 
