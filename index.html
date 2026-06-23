@@ -565,6 +565,214 @@ function Tab4({results,loading,error,refetch}){
   );
 }
 
+// ─── PLAYER FANTASY DATA ─────────────────────────────────────────────────────
+// Stats from Matchday 1. SOT = shots on target.
+// Positions are per tournament listing (affect scoring rules).
+// Note: Alvarez played only 35 min (sub) = no 60+ min bonus.
+const FANTASY_PLAYERS = {
+  // Positions per league rules. Owner = sweepstake participant.
+  // MID: 5pts/goal, 3 assist, 1 CS (60+ min), 1 played (60+ min)
+  // FWD: 4pts/goal, 3 assist, SOT/2 bonus, 1 played (60+ min)
+  // GK:  10pts/goal, 5 pen save, 4 CS (60+ min), -1 per goal after 1st, 1 played (60+ min)
+  "Kane":       {owner:"Billy",     position:"forward",    games:[{match:"England 4–2 Croatia",   mins:90,  goals:2, assists:0, sot:4, conceded:2, penSaves:0}]},
+  "Bruno":      {owner:"Mikey P",   position:"midfielder", games:[{match:"Portugal 1–1 DR Congo", mins:90,  goals:0, assists:0, sot:0, conceded:1, penSaves:0}]},
+  "Messi":      {owner:"Lee",       position:"forward",    games:[{match:"Argentina 3–0 Algeria", mins:79,  goals:3, assists:0, sot:6, conceded:0, penSaves:0}]},
+  "Olise":      {owner:"Christian", position:"forward",    games:[{match:"France 3–1 Senegal",    mins:90,  goals:0, assists:2, sot:0, conceded:1, penSaves:0}]},
+  "Yamal":      {owner:"Palmer",    position:"forward",    games:[{match:"Spain 0–0 Cape Verde",  mins:19,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, note:"Sub, 19 min only"}]},
+  "Raphinha":   {owner:"Niall",     position:"midfielder", games:[{match:"Brazil 1–1 Morocco",    mins:90,  goals:0, assists:0, sot:1, conceded:1, penSaves:0}]},
+  "Mbappe":     {owner:"Mikey Cow", position:"forward",    games:[{match:"France 3–1 Senegal",    mins:99,  goals:2, assists:0, sot:3, conceded:1, penSaves:0}]},
+  "E.Martinez": {owner:"Danny",     position:"goalkeeper", games:[{match:"Argentina 3–0 Algeria", mins:90,  goals:0, assists:0, sot:0, conceded:0, penSaves:0}]},
+  "Eze":        {owner:"Vella",     position:"midfielder", games:[{match:"Did not play MD1",       mins:0,   goals:0, assists:0, sot:0, conceded:0, penSaves:0, note:"England sub — did not appear MD1"}]},
+  "Rogers":     {owner:"Matt H",    position:"midfielder", games:[{match:"Did not play MD1",       mins:0,   goals:0, assists:0, sot:0, conceded:0, penSaves:0, note:"England sub — did not appear MD1"}]},
+  "Dembele":    {owner:"Matty Tay", position:"forward",    games:[{match:"France 3–1 Senegal",    mins:90,  goals:0, assists:0, sot:0, conceded:1, penSaves:0}]},
+  "Vinicius":   {owner:"Tay",       position:"forward",    games:[{match:"Brazil 1–1 Morocco",    mins:90,  goals:1, assists:0, sot:2, conceded:1, penSaves:0}]},
+};
+
+function calcGamePoints(pos, g) {
+  let pts = 0;
+  const played60 = g.mins >= 60;
+  if (played60) pts += 1;
+  if (pos === "goalkeeper") {
+    pts += g.goals * 10;
+    pts += (g.penSaves || 0) * 5;
+    if (g.conceded === 0 && played60) pts += 4;
+    if (g.conceded > 1) pts -= (g.conceded - 1);
+  } else if (pos === "defender") {
+    pts += g.goals * 6;
+    pts += g.assists * 3;
+    if (g.conceded === 0 && played60) pts += 4;
+    if (g.conceded > 1) pts -= (g.conceded - 1);
+  } else if (pos === "midfielder") {
+    pts += g.goals * 5;
+    pts += g.assists * 3;
+    if (g.conceded === 0 && played60) pts += 1;
+  } else if (pos === "forward") {
+    pts += g.goals * 4;
+    pts += g.assists * 3;
+    pts += Math.floor(g.sot / 2);
+  }
+  return pts;
+}
+
+function getBreakdown(pos, g) {
+  const lines = [];
+  const played60 = g.mins >= 60;
+  if (played60) lines.push({label:"Played 60+ min", pts:1});
+  else lines.push({label:`Only ${g.mins} min played`, pts:0});
+  if (pos === "goalkeeper") {
+    if (g.goals > 0) lines.push({label:`${g.goals} goal${g.goals>1?"s":""}`, pts:g.goals*10});
+    if ((g.penSaves||0) > 0) lines.push({label:`${g.penSaves} penalty save${g.penSaves>1?"s":""}`, pts:g.penSaves*5});
+    if (g.conceded === 0 && played60) lines.push({label:"Clean sheet", pts:4});
+    if (g.conceded > 1) lines.push({label:`Goals conceded after 1st (×${g.conceded-1})`, pts:-(g.conceded-1)});
+  } else if (pos === "defender") {
+    if (g.goals > 0) lines.push({label:`${g.goals} goal${g.goals>1?"s":""}`, pts:g.goals*6});
+    if (g.assists > 0) lines.push({label:`${g.assists} assist${g.assists>1?"s":""}`, pts:g.assists*3});
+    if (g.conceded === 0 && played60) lines.push({label:"Clean sheet", pts:4});
+    if (g.conceded > 1) lines.push({label:`Goals conceded after 1st (×${g.conceded-1})`, pts:-(g.conceded-1)});
+  } else if (pos === "midfielder") {
+    if (g.goals > 0) lines.push({label:`${g.goals} goal${g.goals>1?"s":""}`, pts:g.goals*5});
+    if (g.assists > 0) lines.push({label:`${g.assists} assist${g.assists>1?"s":""}`, pts:g.assists*3});
+    if (g.conceded === 0 && played60) lines.push({label:"Clean sheet", pts:1});
+  } else if (pos === "forward") {
+    if (g.goals > 0) lines.push({label:`${g.goals} goal${g.goals>1?"s":""}`, pts:g.goals*4});
+    if (g.assists > 0) lines.push({label:`${g.assists} assist${g.assists>1?"s":""}`, pts:g.assists*3});
+    if (g.sot > 0) lines.push({label:`${g.sot} shots on target (÷2)`, pts:Math.floor(g.sot/2)});
+  }
+  return lines;
+}
+
+function Tab5() {
+  const [liveData, setLiveData] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(true);
+  const [liveError, setLiveError] = useState(null);
+  const [expanded, setExpanded] = useState(null);
+
+  // Fetch live points from Google Sheets via Apps Script
+  useEffect(() => {
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywVGv8xUG4Tska--5wv2iGEZu3a26Nf5QBdBH-PRiTCsWA6A0yZpWgChyr5_B_bY12Sw/exec";
+    fetch(APPS_SCRIPT_URL)
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        setLiveData(data.players);
+        setLiveLoading(false);
+      })
+      .catch(err => {
+        setLiveError(err.message);
+        setLiveLoading(false);
+      });
+  }, []);
+
+  // Build display rows — live data overrides hardcoded points if available
+  const playerRows = Object.entries(FANTASY_PLAYERS).map(([name, p]) => {
+    const hardcodedPts = p.games.reduce((s, g) => s + calcGamePoints(p.position, g), 0);
+    const live = liveData ? liveData.find(d => d.name === name) : null;
+    const totalPts = live ? live.points : hardcodedPts;
+    return { name, ...p, totalPts, isLive: !!live };
+  }).sort((a, b) => b.totalPts - a.totalPts);
+
+  const maxPts = Math.max(...playerRows.map(r => r.totalPts), 1);
+  const posColor = { midfielder: "#3b82f6", forward: "#f97316", defender: "#22c55e", goalkeeper: "#a855f7" };
+
+  return (
+    <div>
+      {/* Status bar */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+        {liveLoading && (
+          <span style={{fontSize:10,color:"#facc15"}}>● Fetching live scores from Google Sheets...</span>
+        )}
+        {!liveLoading && !liveError && liveData && (
+          <span style={{fontSize:10,color:"#4ade80",fontWeight:600}}>● LIVE — points from Google Sheets</span>
+        )}
+        {!liveLoading && liveError && (
+          <span style={{fontSize:10,color:"#f87171"}}>● Offline — showing hardcoded points ({liveError})</span>
+        )}
+        {!liveLoading && liveData && (
+          <span style={{fontSize:10,color:"#555"}}>Updated from spreadsheet</span>
+        )}
+      </div>
+
+      {playerRows.map((p, i) => {
+        const isExp = expanded === p.name;
+        const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
+        const pc = posColor[p.position] || "#888";
+        return (
+          <div key={p.name} onClick={() => setExpanded(isExp ? null : p.name)}
+            style={{...S.playerRow, cursor:"pointer",
+              borderLeft:`3px solid ${i===0?"#ffd700":i===1?"#c0c0c0":i===2?"#cd7f32":"rgba(255,255,255,0.08)"}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:isExp?10:0}}>
+              <span style={{fontSize:18,width:26,textAlign:"center"}}>{medal||<span style={{fontSize:13,color:"#444",fontWeight:700}}>{i+1}</span>}</span>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  <span style={{fontSize:15,fontWeight:700}}>{p.name}</span>
+                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:pc+"22",color:pc,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.05em"}}>{p.position}</span>
+                  {p.isLive && <span style={{fontSize:9,color:"#4ade80"}}>● live</span>}
+                </div>
+                <div style={{fontSize:10,color:"#555",marginTop:1}}>{p.owner}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <span style={{fontSize:24,fontWeight:800,color:"#fff"}}>{p.totalPts}</span>
+                <span style={{fontSize:10,color:"#555",marginLeft:2}}>pts</span>
+              </div>
+            </div>
+
+            {!isExp && (
+              <div style={{...S.barBg,height:4,marginTop:6}}>
+                <div style={{...S.barFill,width:`${(p.totalPts/maxPts)*100}%`,
+                  background:i===0?"#ffd700":i<3?"#888":pc,opacity:0.8}}/>
+              </div>
+            )}
+
+            {isExp && p.games.map((g, gi) => {
+              const breakdown = getBreakdown(p.position, g);
+              const gamePts = calcGamePoints(p.position, g);
+              return (
+                <div key={gi} style={{background:"rgba(255,255,255,0.04)",borderRadius:6,padding:"10px 12px",marginBottom:4}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                    <span style={{fontSize:11,fontWeight:600,color:"#ccc"}}>{g.match}</span>
+                    <span style={{fontSize:13,fontWeight:800,color:probColor(gamePts/20)}}>{gamePts} pts</span>
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {breakdown.map((b, bi) => (
+                      <div key={bi} style={{display:"flex",alignItems:"center",gap:4,
+                        background:b.pts>0?"rgba(74,222,128,0.08)":b.pts<0?"rgba(248,113,113,0.08)":"rgba(255,255,255,0.04)",
+                        borderRadius:4,padding:"3px 8px",
+                        border:`1px solid ${b.pts>0?"rgba(74,222,128,0.2)":b.pts<0?"rgba(248,113,113,0.2)":"rgba(255,255,255,0.06)"}`}}>
+                        <span style={{fontSize:10,color:"#aaa"}}>{b.label}</span>
+                        <span style={{fontSize:11,fontWeight:700,color:b.pts>0?"#4ade80":b.pts<0?"#f87171":"#555"}}>
+                          {b.pts>0?"+":""}{b.pts}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {g.note && <div style={{fontSize:9,color:"#f97316",marginTop:6}}>⚠ {g.note}</div>}
+                  <div style={{fontSize:9,color:"#444",marginTop:6}}>{g.mins} min played</div>
+                </div>
+              );
+            })}
+            {isExp && !p.isLive && (
+              <div style={{fontSize:9,color:"#555",marginTop:6,fontStyle:"italic"}}>
+                ⚠ Showing hardcoded stats — live data unavailable
+              </div>
+            )}
+            {isExp && p.isLive && (
+              <div style={{fontSize:9,color:"#4ade80",marginTop:6}}>
+                ● Total pulled live from Google Sheets · Tap breakdown shows per-game detail from hardcoded stats
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <div style={{fontSize:10,color:"#333",marginTop:12,lineHeight:1.6}}>
+        Live totals from Google Sheets · Per-game breakdown from hardcoded stats · Update spreadsheet after each game
+      </div>
+    </div>
+  );
+}
+
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 function App() {
   const [tab, setTab] = useState(3);
@@ -572,7 +780,7 @@ function App() {
   const [filter, setFilter] = useState("ALL");
   const [groupFilter, setGroupFilter] = useState("ALL");
   const { results, loading, error, lastUpdated, cacheStats, refetch, clearCache } = useWorldCupData();
-  const tabs = ["Perfect %","Results","Leaderboard","Projection"];
+  const tabs = ["Perfect %","Results","Leaderboard","Projection","Players"];
 
   return (
     <div style={S.root}>
@@ -622,6 +830,7 @@ function App() {
         {tab===1&&<Tab2 results={results} loading={loading} error={error} refetch={refetch} groupFilter={groupFilter} setGroupFilter={setGroupFilter}/>}
         {tab===2&&<Tab3 results={results} loading={loading} error={error} refetch={refetch}/>}
         {tab===3&&<Tab4 results={results} loading={loading} error={error} refetch={refetch}/>}
+        {tab===4&&<Tab5/>}
       </div>
 
       <div style={{textAlign:"center",padding:"12px",fontSize:9,color:"#2a2a2a"}}>
