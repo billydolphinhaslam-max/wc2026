@@ -570,25 +570,133 @@ function Tab4({results,loading,error,refetch}){
 // Positions are per tournament listing (affect scoring rules).
 // Note: Alvarez played only 35 min (sub) = no 60+ min bonus.
 const FANTASY_PLAYERS = {
-  // Positions per league rules. Owner = sweepstake participant.
-  // MID: 5pts/goal, 3 assist, 1 CS (60+ min), 1 played (60+ min)
-  // FWD: 4pts/goal, 3 assist, SOT/2 bonus, 1 played (60+ min)
-  // GK:  10pts/goal, 5 pen save, 4 CS (60+ min), -1 per goal after 1st, 1 played (60+ min)
-  "Kane":       {owner:"Billy",     position:"forward",    games:[{match:"England 4–2 Croatia",   mins:90,  goals:2, assists:0, sot:4, conceded:2, penSaves:0}]},
-  "Bruno":      {owner:"Mikey P",   position:"midfielder", games:[{match:"Portugal 1–1 DR Congo", mins:90,  goals:0, assists:0, sot:0, conceded:1, penSaves:0}]},
-  "Messi":      {owner:"Lee",       position:"forward",    games:[{match:"Argentina 3–0 Algeria", mins:79,  goals:3, assists:0, sot:6, conceded:0, penSaves:0}]},
-  "Olise":      {owner:"Christian", position:"forward",    games:[{match:"France 3–1 Senegal",    mins:90,  goals:0, assists:2, sot:0, conceded:1, penSaves:0}]},
-  "Yamal":      {owner:"Palmer",    position:"forward",    games:[{match:"Spain 0–0 Cape Verde",  mins:19,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, note:"Sub, 19 min only"}]},
-  "Raphinha":   {owner:"Niall",     position:"midfielder", games:[{match:"Brazil 1–1 Morocco",    mins:90,  goals:0, assists:0, sot:1, conceded:1, penSaves:0}]},
-  "Mbappe":     {owner:"Mikey Cow", position:"forward",    games:[{match:"France 3–1 Senegal",    mins:99,  goals:2, assists:0, sot:3, conceded:1, penSaves:0}]},
-  "E.Martinez": {owner:"Danny",     position:"goalkeeper", games:[{match:"Argentina 3–0 Algeria", mins:90,  goals:0, assists:0, sot:0, conceded:0, penSaves:0}]},
-  "Eze":        {owner:"Vella",     position:"midfielder", games:[{match:"Did not play MD1",       mins:0,   goals:0, assists:0, sot:0, conceded:0, penSaves:0, note:"England sub — did not appear MD1"}]},
-  "Rogers":     {owner:"Matt H",    position:"midfielder", games:[{match:"Did not play MD1",       mins:0,   goals:0, assists:0, sot:0, conceded:0, penSaves:0, note:"England sub — did not appear MD1"}]},
-  "Dembele":    {owner:"Matty Tay", position:"forward",    games:[{match:"France 3–1 Senegal",    mins:90,  goals:0, assists:0, sot:0, conceded:1, penSaves:0}]},
-  "Vinicius":   {owner:"Tay",       position:"forward",    games:[{match:"Brazil 1–1 Morocco",    mins:90,  goals:1, assists:0, sot:2, conceded:1, penSaves:0}]},
+  // Updated through MD2 (Jun 22). MD3 + knockouts marked pending.
+  // SOT = shots on target. CS = clean sheet (1/0). penSaves = penalty saves.
+  // pending:true rows show in breakdown as not yet played.
+
+  "Kane": {owner:"Billy", position:"forward", games:[
+    {match:"England 4–2 Croatia",    date:"17 Jun", mins:90, goals:2, assists:0, sot:7, conceded:2, penSaves:0},
+    {match:"England vs Ghana",        date:"23 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"England vs Panama",       date:"27 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Bruno": {owner:"Mikey P", position:"midfielder", games:[
+    {match:"Portugal 1–1 DR Congo",   date:"17 Jun", mins:90, goals:0, assists:0, sot:0, conceded:1, penSaves:0},
+    {match:"Portugal vs Uzbekistan",  date:"23 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Portugal vs Colombia",    date:"27 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Messi": {owner:"Lee", position:"forward", games:[
+    {match:"Argentina 3–0 Algeria",   date:"16 Jun", mins:79, goals:3, assists:0, sot:6, conceded:0, penSaves:0},
+    {match:"Argentina 2–0 Austria",   date:"22 Jun", mins:90, goals:2, assists:0, sot:5, conceded:0, penSaves:0},
+    {match:"Argentina vs Jordan",     date:"27 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Olise": {owner:"Christian", position:"forward", games:[
+    {match:"France 3–1 Senegal",      date:"16 Jun", mins:90, goals:0, assists:2, sot:2, conceded:1, penSaves:0},
+    {match:"France 3–0 Iraq",         date:"22 Jun", mins:90, goals:0, assists:1, sot:1, conceded:0, penSaves:0},
+    {match:"France vs Norway",        date:"26 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Yamal": {owner:"Palmer", position:"forward", games:[
+    {match:"Spain 0–0 Cape Verde",    date:"15 Jun", mins:19, goals:0, assists:0, sot:0, conceded:0, penSaves:0, note:"Sub only, 19 min"},
+    {match:"Spain 4–0 Saudi Arabia",  date:"21 Jun", mins:45, goals:1, assists:1, sot:2, conceded:0, penSaves:0, note:"Subbed off HT"},
+    {match:"Spain vs Uruguay",        date:"26 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Raphinha": {owner:"Niall", position:"midfielder", games:[
+    {match:"Brazil 1–1 Morocco",      date:"13 Jun", mins:90, goals:0, assists:0, sot:1, conceded:1, penSaves:0},
+    {match:"Brazil 3–0 Haiti",        date:"19 Jun", mins:40, goals:0, assists:0, sot:1, conceded:0, penSaves:0, note:"Injured off 40'"},
+    {match:"Brazil vs Scotland",      date:"24 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true, note:"Hamstring — return uncertain"},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Mbappe": {owner:"Mikey Cow", position:"forward", games:[
+    {match:"France 3–1 Senegal",      date:"16 Jun", mins:99, goals:2, assists:0, sot:3, conceded:1, penSaves:0},
+    {match:"France 3–0 Iraq",         date:"22 Jun", mins:90, goals:2, assists:0, sot:4, conceded:0, penSaves:0},
+    {match:"France vs Norway",        date:"26 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "E.Martinez": {owner:"Danny", position:"goalkeeper", games:[
+    {match:"Argentina 3–0 Algeria",   date:"16 Jun", mins:90, goals:0, assists:0, sot:0, conceded:0, penSaves:0, cs:1},
+    {match:"Argentina 2–0 Austria",   date:"22 Jun", mins:90, goals:0, assists:0, sot:0, conceded:0, penSaves:0, cs:1},
+    {match:"Argentina vs Jordan",     date:"27 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Eze": {owner:"Vella", position:"midfielder", games:[
+    {match:"England 4–2 Croatia",     date:"17 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, note:"Did not appear"},
+    {match:"England vs Ghana",        date:"23 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"England vs Panama",       date:"27 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Rogers": {owner:"Matt H", position:"midfielder", games:[
+    {match:"England 4–2 Croatia",     date:"17 Jun", mins:18, goals:0, assists:0, sot:0, conceded:0, penSaves:0, note:"Sub, 18 min only"},
+    {match:"England vs Ghana",        date:"23 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"England vs Panama",       date:"27 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Dembele": {owner:"Matty Tay", position:"forward", games:[
+    {match:"France 3–1 Senegal",      date:"16 Jun", mins:90, goals:0, assists:0, sot:0, conceded:1, penSaves:0},
+    {match:"France 3–0 Iraq",         date:"22 Jun", mins:90, goals:1, assists:1, sot:2, conceded:0, penSaves:0},
+    {match:"France vs Norway",        date:"26 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
+
+  "Vinicius": {owner:"Tay", position:"forward", games:[
+    {match:"Brazil 1–1 Morocco",      date:"13 Jun", mins:90, goals:1, assists:0, sot:2, conceded:1, penSaves:0},
+    {match:"Brazil 3–0 Haiti",        date:"19 Jun", mins:90, goals:1, assists:1, sot:3, conceded:0, penSaves:0},
+    {match:"Brazil vs Scotland",      date:"24 Jun", mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"R32",                     date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"QF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"SF",                      date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+    {match:"Final",                   date:"TBD",    mins:0,  goals:0, assists:0, sot:0, conceded:0, penSaves:0, pending:true},
+  ]},
 };
 
 function calcGamePoints(pos, g) {
+  if (g.pending) return 0;
   let pts = 0;
   const played60 = g.mins >= 60;
   if (played60) pts += 1;
@@ -615,6 +723,7 @@ function calcGamePoints(pos, g) {
 }
 
 function getBreakdown(pos, g) {
+  if (g.pending) return [{label:"Not yet played", pts:0}];
   const lines = [];
   const played60 = g.mins >= 60;
   if (played60) lines.push({label:"Played 60+ min", pts:1});
@@ -725,13 +834,13 @@ function Tab5() {
               </div>
             )}
 
-            {isExp && p.games.map((g, gi) => {
+            {isExp && p.games.filter(g => !g.pending).map((g, gi) => {
               const breakdown = getBreakdown(p.position, g);
               const gamePts = calcGamePoints(p.position, g);
               return (
                 <div key={gi} style={{background:"rgba(255,255,255,0.04)",borderRadius:6,padding:"10px 12px",marginBottom:4}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                    <span style={{fontSize:11,fontWeight:600,color:"#ccc"}}>{g.match}</span>
+                    <span style={{fontSize:11,fontWeight:600,color:"#ccc"}}>{g.match} <span style={{fontSize:9,color:"#555"}}>{g.date}</span></span>
                     <span style={{fontSize:13,fontWeight:800,color:probColor(gamePts/20)}}>{gamePts} pts</span>
                   </div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
